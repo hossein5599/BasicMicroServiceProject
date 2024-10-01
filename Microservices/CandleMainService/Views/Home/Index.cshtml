@@ -1,0 +1,217 @@
+﻿ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Candle Chart</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Candle Chart</h1>
+        <canvas id="candleChart"></canvas>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Fetch candle data and update chart
+            const ctx = document.getElementById('candleChart').getContext('2d');
+            const chartData = {
+                datasets: [{
+                    label: 'Candles',
+                    data: [],
+                    backgroundColor: 'rgba(0, 255, 0, 0.5)',
+                    borderColor: 'rgba(0, 255, 0, 1)',
+                    borderWidth: 1,
+                }]
+            };
+            const candleChart = new Chart(ctx, {
+                type: 'candlestick',
+                data: chartData,
+                options: {
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        }
+                    }
+                }
+            });
+
+            function fetchCandles() {
+                $.get('/Candle', function (candles) {
+                    chartData.datasets[0].data = candles.map(c => ({
+                        x: new Date(c.id * 1000), // Replace with actual timestamp
+                        o: c.open,
+                        h: c.high,
+                        l: c.low,
+                        c: c.close
+                    }));
+                    candleChart.update();
+                    setTimeout(fetchCandles, 2000); // Poll every 2 seconds
+                });
+            }
+
+            fetchCandles();
+        });
+    </script>
+</body>
+</html>
+
+@* <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Candle Chart</title>
+    <style>
+        #chart-container {
+            width: 50%;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center">Candle Chart</h1>
+    <div id="chart-container">
+        <canvas id="candleChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft.signalr/6.0.5/signalr.min.js"></script>
+
+<script>
+    const ctx = document.getElementById('candleChart').getContext('2d');
+    let candles = [];
+
+    const candleChart = new Chart(ctx, {
+        type: 'candlestick', // You might need a Chart.js plugin for candlestick
+        data: {
+            datasets: [{
+                label: 'Candlestick Chart',
+                data: candles
+            }]
+        },
+        options: {
+            scales: {
+                x: { type: 'category' },
+                y: { beginAtZero: false }
+            }
+        }
+    });
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/candlehub")
+        .build();
+
+    connection.on("ReceiveCandle", function (candle) {
+        candles.push({ x: candle.Id, y: [candle.Open, candle.Close, candle.High, candle.Low] });
+        candleChart.update();
+    });
+
+    connection.start().catch(function (err) {
+        return console.error(err.toString());
+    });
+</script>
+</body>
+</html> *@
+@* 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candle Chart</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft.signalr/5.0.13/signalr.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Candle Chart</h1>
+        <canvas id="candleChart"></canvas>
+    </div>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/candlehub")
+            .build();
+
+        connection.on("ReceiveCandle", function(candle) {
+            console.log(candle);
+            updateChart(candle);
+        });
+
+        connection.start().then(function () {
+            console.log('SignalR Connected.');
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        const ctx = document.getElementById('candleChart').getContext('2d');
+        const candleData = {
+            labels: [],
+            datasets: [{
+                label: 'Candles',
+                data: [],
+                backgroundColor: 'rgba(0, 0, 255, 0.5)',
+                borderColor: 'rgba(0, 0, 255, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const candleChart = new Chart(ctx, {
+            type: 'bar',
+            data: candleData,
+            options: {
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function updateChart(candle) {
+            candleData.labels.push(candle.Id);
+            candleData.datasets[0].data.push(candle);
+            candleChart.update();
+        }
+
+        function fetchCandles() {
+            $.get(`/api/candles`, function(candles) {
+                candles.forEach(function(candle) {
+                    updateChart(candle);
+                });
+            });
+        }
+
+        fetchCandles();
+    </script>
+
+</body>
+</html> *@
